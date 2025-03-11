@@ -1,0 +1,119 @@
+I'll provide a modified test sequence specifically designed for a blank 8051 chip, with clear instructions on when to apply clock signals and what to expect at each step.
+
+## Modified 8051 Test Sequence for Blank Chips
+
+### Preliminary Setup
+1. Pin 40 (VCC): Apply 5V (IH) - Must remain high throughout testing
+2. Pin 20 (GND): Connect to ground (0V) - Must remain grounded throughout
+3. Ensure all port pins have weak pull-up resistors (10kΩ to 5V)
+
+### Test 1: Reset and Initial State Verification
+1. Pin 9 (RST): Apply IH (5V)
+2. Pin 19 (XTAL1): Apply 6 complete clock cycles:
+   - Cycle 1-6: IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL
+3. Pin 9 (RST): Apply IL (0V)
+4. Pin 19 (XTAL1): Apply 2 complete clock cycles:
+   - Cycle 7-8: IH→IL→IH→IL
+   - Expected: Pin 30 (ALE) should pulse with clock cycles
+   - Expected: Pin 29 (PSEN) should pulse low during instruction fetches
+
+### Test 2: External Program Memory Access
+1. Pin 31 (EA/VPP): Apply IL (0V) to force external program memory access
+2. Pin 19 (XTAL1): Apply 6 complete clock cycles:
+   - Cycle 1-6: IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL
+   - Expected: Port 0 should output address values (typically starting with 0x00, 0x01, etc.)
+   - Expected: Pin 30 (ALE) should pulse high with each machine cycle
+   - Expected: Pin 29 (PSEN) should pulse low after ALE
+
+### Test 3: Port 0 Functionality Test
+1. Pin 31 (EA/VPP): Apply IL (0V) to continue external program memory access
+2. During ALE high (when Port 0 is outputting an address):
+   - Observe Port 0 pins - they should show the current program counter value
+3. During PSEN low (when Port 0 is expecting instruction input):
+   - Apply IH to all Port 0 pins (0xFF pattern)
+   - This simulates an "MOV A, #0xFF" instruction (opcode 0x74 0xFF)
+4. Pin 19 (XTAL1): Apply 12 complete clock cycles:
+   - Cycle 1-12: IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL
+   - Expected: The chip should execute the instruction and load 0xFF into the accumulator
+
+### Test 4: Port 1 Input Functionality
+1. Pin 31 (EA/VPP): Apply IL (0V)
+2. During ALE high periods:
+   - Observe Port 0 for address output
+3. During PSEN low periods:
+   - Apply 0x85 to Port 0 (opcode for "MOV 80h, A" - moves accumulator to P0)
+4. Pin 19 (XTAL1): Apply 12 complete clock cycles:
+   - Cycle 1-12: IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL
+   - Expected: After instruction execution, Port 0 should output 0xFF when not in address mode
+
+### Test 5: Port 2 Output Functionality
+1. Pin 31 (EA/VPP): Apply IL (0V)
+2. During ALE high periods:
+   - Observe Port 0 for address output
+3. During PSEN low periods:
+   - First, apply 0x74 to Port 0 (opcode for "MOV A, #immediate")
+   - Next PSEN, apply 0xAA to Port 0 (the immediate value)
+   - Next PSEN, apply 0x85 to Port 0 (opcode for "MOV direct, A")
+   - Next PSEN, apply 0xA0 to Port 0 (the direct address, which is P2)
+4. Pin 19 (XTAL1): Apply 24 complete clock cycles:
+   - Cycle 1-24: IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL
+   - Expected: After executing these instructions, Port 2 should output 0xAA
+
+### Test 6: Port 3 Output Functionality
+1. Pin 31 (EA/VPP): Apply IL (0V)
+2. During ALE high periods:
+   - Observe Port 0 for address output
+3. During PSEN low periods:
+   - First, apply 0x74 to Port 0 (opcode for "MOV A, #immediate")
+   - Next PSEN, apply 0x55 to Port 0 (the immediate value)
+   - Next PSEN, apply 0x85 to Port 0 (opcode for "MOV direct, A")
+   - Next PSEN, apply 0xB0 to Port 0 (the direct address, which is P3)
+4. Pin 19 (XTAL1): Apply 24 complete clock cycles:
+   - Cycle 1-24: IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL
+   - Expected: After executing these instructions, Port 3 should output 0x55
+
+### Test 7: Bit Manipulation Test
+1. Pin 31 (EA/VPP): Apply IL (0V)
+2. During PSEN low periods, feed these opcodes in sequence:
+   - 0xD2, 0x90 (Opcode for "SETB P1.0" - sets bit 0 of Port 1)
+   - 0xD2, 0x91 (Opcode for "SETB P1.1" - sets bit 1 of Port 1)
+   - 0xC2, 0x92 (Opcode for "CLR P1.2" - clears bit 2 of Port 1)
+   - 0xC2, 0x93 (Opcode for "CLR P1.3" - clears bit 3 of Port 1)
+3. Pin 19 (XTAL1): Apply 48 complete clock cycles:
+   - Cycle 1-48: (IH→IL) x48
+   - Expected: Port 1 should show bits 0 and 1 high, bits 2 and 3 low
+
+### Test 8: Timer Functional Test
+1. Pin 31 (EA/VPP): Apply IL (0V)
+2. During PSEN low periods, feed these opcodes in sequence:
+   - 0x75, 0x89, 0x01 (Opcode for "MOV TMOD, #01h" - sets Timer 0 to 16-bit mode)
+   - 0x75, 0x8C, 0xFF (Opcode for "MOV TH0, #FFh" - loads Timer 0 high byte)
+   - 0x75, 0x8A, 0xFE (Opcode for "MOV TL0, #FEh" - loads Timer 0 low byte)
+   - 0xD2, 0x8C (Opcode for "SETB TR0" - starts Timer 0)
+3. Pin 19 (XTAL1): Apply 72 complete clock cycles:
+   - Cycle 1-72: (IH→IL) x72
+4. During subsequent PSEN cycles, feed:
+   - 0x30, 0x8D, 0xFD (Opcode for "JNB TF0, $" - loop until timer overflows)
+   - 0xC2, 0x8D (Opcode for "CLR TF0" - clear timer overflow flag)
+   - 0x75, 0x80, 0x0F (Opcode for "MOV P0, #0Fh" - output to Port 0)
+5. Pin 19 (XTAL1): Apply 36 more complete clock cycles:
+   - Cycle 73-108: (IH→IL) x36
+   - Expected: After timer overflow, Port 0 should output 0x0F
+
+### Timing and Observation Details
+1. For all tests, observe ALE (Pin 30) pulses to identify machine cycles
+2. PSEN (Pin 29) goes low during instruction fetch cycles
+3. One machine cycle typically consists of 6 clock pulses for standard 8051
+4. During each machine cycle, the sequence is:
+   - Clock pulses 1-2: Address output phase (observe Port 0 for address)
+   - Clock pulses 3-6: Instruction execution phase
+
+### Important Notes for Blank Chip Testing
+1. When EA/VPP is low, the chip expects instructions from external memory
+2. You're simulating these instructions by applying opcodes to Port 0 during PSEN low periods
+3. For accurate timing, observe ALE pulses to synchronize your instruction inputs
+4. A logic analyzer or oscilloscope is highly recommended to track ALE and PSEN signals
+5. Port 0 requires external pull-up resistors since it's open-drain
+6. If a test fails, try repeating with more clock cycles to ensure complete execution
+
+This modified sequence should work with blank 8051 chips by directly feeding machine code instructions through Port 0 during external program memory access mode.
