@@ -1,0 +1,121 @@
+I'll update the test sequence with explicit clock signal instructions. This will allow you to manually clock the 8051 microcontroller by applying high and low signals to the clock pins.
+
+## Complete 8051 Functionality Test with Manual Clocking Instructions
+
+### Clock Signal Basics
+- XTAL1 (Pin 19): This is where you'll apply your manual clock signal
+- XTAL2 (Pin 18): Leave unconnected or connect to ground through a capacitor
+- One complete clock cycle = one high pulse (IH) followed by one low pulse (IL)
+- Apply clock signals slowly enough to observe outputs (1-2 Hz is good for manual testing)
+
+### 1. Power-On and Reset Test
+1. Pin 40 (VCC): Apply 5V (IH) - Must remain high throughout testing
+2. Pin 20 (GND): Connect to ground (0V) - Must remain grounded throughout
+3. Pin 9 (RST): Apply IH (5V)
+4. Pin 19 (XTAL1): Apply 6 complete clock cycles:
+   - Cycle 1-6: IH→IL→IH→IL→IH→IL→IH→IL→IH→IL→IH→IL
+5. Pin 9 (RST): Apply IL (0V) to initiate normal operation
+   - Expected: Pin 30 (ALE) should start pulsing with each clock cycle
+   - Apply 2 more clock cycles to verify ALE pulsing
+
+### 2. Memory Access Test
+1. Pin 31 (EA/VPP): Apply IL (0V) to force external program memory access
+2. Set up Port 0 (Pins 32-39) with pull-up resistors (10kΩ to 5V)
+3. Pin 19 (XTAL1): Apply 12 complete clock cycles:
+   - Cycle 1-12: (IH→IL) x12
+4. Observe during clocking:
+   - Port 0: Should multiplex between address and data with each cycle
+   - Pin 30 (ALE): Should pulse high during first half of each machine cycle
+   - Pin 29 (PSEN): Should pulse low during second half of each machine cycle
+   - Note: One machine cycle = 6 clock cycles for standard 8051
+
+### 3. ALU and Register Operations Test
+1. Pin 31 (EA/VPP): Apply IH (5V) for internal ROM execution
+2. Prepare test input patterns on Port 1 (Pins 1-8)
+3. Apply test pattern #1: All pins IH (0xFF)
+4. Pin 19 (XTAL1): Apply 12 complete clock cycles:
+   - Cycle 1-12: (IH→IL) x12
+5. Apply test pattern #2: Alternating IH/IL (0xAA)
+6. Pin 19 (XTAL1): Apply 12 complete clock cycles:
+   - Cycle 13-24: (IH→IL) x12
+7. Apply test pattern #3: Inverse alternating IH/IL (0x55)
+8. Pin 19 (XTAL1): Apply 24 complete clock cycles:
+   - Cycle 25-48: (IH→IL) x24
+   - Expected: Port 2 (Pins 21-28) should output computed results after processing
+
+### 4. Timer/Counter Function Test
+1. Apply IH to Pin 14 (T0) and Pin 15 (T1) to test timer inputs
+2. Toggle Pin 14 (T0) high-low-high 10 times in sequence
+3. Pin 19 (XTAL1): Apply 50 complete clock cycles:
+   - Cycle 1-50: (IH→IL) x50
+4. Observe Port 2: Bit 0 (Pin 21) should change state if timer is working
+5. Toggle Pin 15 (T1) high-low-high 10 times in sequence
+6. Pin 19 (XTAL1): Apply 50 complete clock cycles:
+   - Cycle 51-100: (IH→IL) x50
+   - Expected: Port 2: Bit 1 (Pin 22) should change state if timer is working
+
+### 5. Interrupt Function Test
+1. Apply IH to all port pins initially
+2. Apply IL to Pin 12 (INT0) to trigger external interrupt 0
+3. Pin 19 (XTAL1): Apply 24 complete clock cycles:
+   - Cycle 1-24: (IH→IL) x24
+4. Observe Port 3: Changes should occur if interrupt handling works
+5. Apply IL to Pin 13 (INT1) to trigger external interrupt 1
+6. Pin 19 (XTAL1): Apply 24 complete clock cycles:
+   - Cycle 25-48: (IH→IL) x24
+   - Expected: Port 0 should show specific patterns if interrupts are functioning
+
+### 6. Serial Communication Test
+1. Apply alternating IH/IL patterns to Pin 10 (RXD) simulating UART input
+   - Pattern: Start bit (IL), 8 data bits (10101010), Stop bit (IH)
+2. Pin 19 (XTAL1): Apply 100 complete clock cycles:
+   - Cycle 1-100: (IH→IL) x100
+3. Observe Pin 11 (TXD) for response
+   - Expected: Should output processed data if UART function works
+
+### 7. Bit Manipulation Test
+1. Apply specific bit patterns to Port 1:
+   - Pins 1,3,5,7: IH (5V)
+   - Pins 2,4,6,8: IL (0V)
+2. Pin 19 (XTAL1): Apply 36 complete clock cycles:
+   - Cycle 1-36: (IH→IL) x36
+3. Observe Port 2: Should show complemented bit pattern if bit manipulation works
+   - Expected: Pins 21,23,25,27: IL (0V)
+   - Expected: Pins 22,24,26,28: IH (5V)
+
+### 8. Jump and Call Instruction Test
+1. Apply sequence to Port 1:
+   - All pins IH (0xFF) for 5 clock cycles
+   - All pins IL (0x00) for 5 clock cycles
+   - Pattern 0xA5 for 5 clock cycles
+2. Pin 19 (XTAL1): Apply 60 complete clock cycles:
+   - Cycle 1-60: (IH→IL) x60
+3. Observe Port 0: Should output 0x5A if jump/call instructions work
+   - Expected: Jump operations change program flow, resulting in different output patterns
+
+### 9. Logic Operations Test
+1. Apply to Port 1: Pattern 0xF0 (Pins 1-4: IH, Pins 5-8: IL)
+2. Apply to Port 3: Pattern 0x0F (Pins 10-13: IL, Pins 14-17: IH)
+3. Pin 19 (XTAL1): Apply 24 complete clock cycles:
+   - Cycle 1-24: (IH→IL) x24
+4. Observe Port 2: Should show results of logical operations
+   - Expected: Different bit patterns representing AND, OR, XOR operations
+
+### 10. Addressing Modes Test
+1. Apply to Port 0: Address pattern 0x55
+2. Apply to Port 1: Data pattern 0xAA
+3. Pin 19 (XTAL1): Apply 36 complete clock cycles:
+   - Cycle 1-36: (IH→IL) x36
+4. Observe Port 2: Changes indicate addressing mode functionality
+   - Expected: Different output patterns based on direct/indirect addressing operations
+
+### Important Manual Clocking Notes:
+- Each IH→IL sequence on Pin 19 constitutes one complete clock cycle
+- For reliable operation, maintain approximately equal duration for high and low states
+- Apply clock transitions cleanly to avoid spurious signals
+- Clock speed should be slow enough to observe outputs (1-2Hz is ideal for manual testing)
+- One machine cycle on the 8051 = 12 oscillator periods (for standard 8051) or 6 oscillator periods (for some variants)
+- Allow the outputs to stabilize after each clock transition
+- Use an oscilloscope or logic analyzer if available to observe the timing relationships
+
+Would you like me to elaborate on any specific test or provide more detailed clock-by-clock signal patterns for a particular instruction sequence?
