@@ -1,0 +1,73 @@
+; 8051 Pin Level Detection Test Program
+; This program tests various ports functionality by:
+; 1. Outputting specific patterns to Port 0 and Port 2
+; 2. Reading from Port 1 and Port 3
+; 3. Verifying expected values
+
+    ORG 0000H       ; Start at address 0000H
+    LJMP MAIN       ; Jump to main program
+
+    ORG 0030H       ; Main program starts at 0030H
+MAIN:
+    ; Initialize stack pointer
+    MOV SP, #7FH
+    
+    ; Test 1: Write to Port 0, expect response on Port 1
+    MOV A, #0FFH    ; Load accumulator with FF hex
+    MOV P0, A       ; Output FF to Port 0
+    
+    ; Wait for a few cycles
+    MOV R7, #10     ; Load delay counter
+DELAY1:
+    DJNZ R7, DELAY1 ; Decrement and loop until zero
+    
+    ; Read Port 1 (should be 0AAh if hardware is looped back)
+    MOV A, P1       ; Read Port 1
+    CJNE A, #0AAH, TEST1_FAIL ; Compare with expected value
+    
+    ; Test 2: Write to Port 2, expect response on Port 3
+    MOV A, #55H     ; Load accumulator with 55 hex
+    MOV P2, A       ; Output 55 to Port 2
+    
+    ; Wait for a few cycles
+    MOV R7, #10     ; Load delay counter
+DELAY2:
+    DJNZ R7, DELAY2 ; Decrement and loop until zero
+    
+    ; Read Port 3 (should be 33h if hardware is configured correctly)
+    MOV A, P3       ; Read Port 3
+    CJNE A, #33H, TEST2_FAIL ; Compare with expected value
+    
+    ; All tests passed, indicate success by toggling all ports
+SUCCESS_LOOP:
+    MOV P0, #0FFH   ; Set all Port 0 pins high
+    MOV P2, #0FFH   ; Set all Port 2 pins high
+    
+    ; Delay
+    MOV R7, #100
+DELAY_S1:
+    DJNZ R7, DELAY_S1
+    
+    MOV P0, #00H    ; Set all Port 0 pins low
+    MOV P2, #00H    ; Set all Port 2 pins low
+    
+    ; Delay
+    MOV R7, #100
+DELAY_S2:
+    DJNZ R7, DELAY_S2
+    
+    SJMP SUCCESS_LOOP ; Loop forever on success
+    
+TEST1_FAIL:
+    ; Indicate test 1 failure by toggling Port 0 only
+    MOV P0, #0F0H
+    MOV P1, #0F0H
+    SJMP TEST1_FAIL ; Loop forever
+    
+TEST2_FAIL:
+    ; Indicate test 2 failure by toggling Port 2 only
+    MOV P2, #0F0H
+    MOV P3, #0F0H
+    SJMP TEST2_FAIL ; Loop forever
+    
+    END
